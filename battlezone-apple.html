@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BattleZone Royale</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --sf: -apple-system, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Inter, sans-serif;
+    --glass-bg: rgba(20, 20, 22, 0.72);
+    --glass-border: rgba(255,255,255,0.10);
+    --glass-highlight: rgba(255,255,255,0.06);
+    --accent: #0A84FF;
+    --accent-green: #30D158;
+    --accent-yellow: #FFD60A;
+    --accent-red: #FF453A;
+    --accent-orange: #FF9F0A;
+    --accent-purple: #BF5AF2;
+    --text-primary: rgba(255,255,255,0.95);
+    --text-secondary: rgba(255,255,255,0.55);
+    --text-tertiary: rgba(255,255,255,0.30);
+    --separator: rgba(255,255,255,0.08);
+  }
+
+  body {
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden;
+    font-family: var(--sf);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #gameContainer {
+    position: relative;
+    width: 800px;
+    height: 600px;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06);
+  }
+
+  canvas {
+    display: block;
+    image-rendering: pixelated;
+  }
+
+  /* ── HUD ─────────────────────────────────────────── */
+  #ui {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    font-family: var(--sf);
+  }
+
+  #hud {
+    position: absolute;
+    top: 14px; left: 14px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-radius: 14px;
+    padding: 10px 14px;
+    min-width: 170px;
+  }
+
+  .hud-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 3px;
+  }
+
+  .hud-row { margin-bottom: 8px; }
+  .hud-row:last-child { margin-bottom: 0; }
+
+  .bar-track {
+    width: 160px;
+    height: 5px;
+    background: rgba(255,255,255,0.10);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  #healthFill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-red), #FF6B6B);
+    border-radius: 3px;
+    transition: width 0.25s ease;
+  }
+  #shieldFill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #5AC8FA);
+    border-radius: 3px;
+    transition: width 0.25s ease;
+  }
+
+  .hud-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 3px;
+    letter-spacing: -0.01em;
+  }
+
+  .hud-mats {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--separator);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  /* storm info */
+  #stormInfo {
+    position: absolute;
+    top: 14px; right: 14px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-radius: 14px;
+    padding: 10px 14px;
+    text-align: right;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    min-width: 130px;
+  }
+  #stormInfo .storm-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-purple);
+    margin-bottom: 2px;
+  }
+  #stormDmg { color: var(--accent-red); font-weight: 700; font-size: 10px; }
+
+  /* kill feed */
+  #killFeed {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    pointer-events: none;
+  }
+  .killMsg {
+    display: inline-block;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    animation: killFadeOut 3s ease forwards;
+  }
+  @keyframes killFadeOut {
+    0%  { opacity:1; transform:translateY(0); }
+    70% { opacity:1; }
+    100%{ opacity:0; transform:translateY(-6px); }
+  }
+
+  /* ammo */
+  #ammoInfo {
+    position: absolute;
+    bottom: 72px; right: 14px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-radius: 14px;
+    padding: 8px 12px;
+    text-align: right;
+    min-width: 90px;
+  }
+  #weaponName {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-orange);
+    margin-bottom: 2px;
+  }
+  .ammo-count {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+  .ammo-reserve {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+  }
+
+  /* inventory */
+  #inventory {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+  }
+  .slot {
+    width: 52px; height: 52px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: all 0.15s ease;
+    position: relative;
+  }
+  .slot.active {
+    border-color: var(--accent-yellow);
+    background: rgba(255, 214, 10, 0.12);
+    box-shadow: 0 0 0 1px rgba(255,214,10,0.3), inset 0 1px 0 rgba(255,214,10,0.15);
+  }
+  .slotIcon { font-size: 20px; margin-bottom: 1px; }
+
+  /* minimap */
+  #minimap {
+    position: absolute;
+    bottom: 14px; right: 14px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  }
+
+  /* build mode */
+  #buildMenu {
+    position: absolute;
+    bottom: 76px; left: 14px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  #buildModeLabel {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(10, 132, 255, 0.18);
+    border: 1px solid rgba(10, 132, 255, 0.35);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: none;
+    pointer-events: none;
+  }
+
+  /* ── OVERLAY (start screen) ───────────────────────── */
+  #overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+  }
+
+  .overlay-card {
+    background: rgba(28, 28, 30, 0.80);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    border-radius: 22px;
+    padding: 32px 36px 28px;
+    width: 340px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .overlay-icon {
+    font-size: 44px;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 4px 12px rgba(255,214,10,0.4));
+  }
+
+  .overlay-title {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .overlay-sub {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    text-align: center;
+    line-height: 1.5;
+    margin-bottom: 22px;
+    max-width: 260px;
+  }
+
+  /* difficulty picker */
+  .diff-label-heading {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    align-self: flex-start;
+    margin-bottom: 8px;
+  }
+
+  #difficultySelect {
+    display: flex;
+    gap: 0;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 3px;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  .diffBtn {
+    flex: 1;
+    padding: 8px 0;
+    font-family: var(--sf);
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.18s ease;
+    pointer-events: all;
+  }
+  .diffBtn:hover { color: var(--text-primary); }
+
+  .diffBtn.easy.selected  { background: rgba(48,209,88,0.18);  color: var(--accent-green);  box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .diffBtn.medium.selected{ background: rgba(255,214,10,0.18); color: var(--accent-yellow); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .diffBtn.hard.selected  { background: rgba(255,69,58,0.18);  color: var(--accent-red);    box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+
+  #diffLabel {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    text-align: center;
+    min-height: 14px;
+  }
+
+  #startBtn {
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-family: var(--sf);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    pointer-events: all;
+    transition: all 0.18s ease;
+    letter-spacing: -0.01em;
+    box-shadow: 0 4px 16px rgba(10,132,255,0.35);
+  }
+  #startBtn:hover {
+    background: #2296FF;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(10,132,255,0.45);
+  }
+  #startBtn:active { transform: translateY(0); }
+
+  .controls-hint {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--text-tertiary);
+    margin-top: 14px;
+    text-align: center;
+    line-height: 1.8;
+    pointer-events: all;
+  }
+  .controls-hint kbd {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: var(--sf);
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  /* ── GAME OVER ─────────────────────────────────────── */
+  #gameOver {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+  }
+
+  #gameOver .overlay-card { width: 320px; }
+
+  #winMsg  { font-size: 22px; font-weight: 800; color: var(--accent-yellow); margin-bottom: 4px; letter-spacing: -0.02em; display:none; }
+  #loseMsg { font-size: 22px; font-weight: 800; color: var(--accent-red);    margin-bottom: 4px; letter-spacing: -0.02em; display:none; }
+
+  #finalStats {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    line-height: 1.9;
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 12px 0;
+    border-top: 1px solid var(--separator);
+    border-bottom: 1px solid var(--separator);
+    width: 100%;
+  }
+
+  #startBtn2 {
+    width: 100%;
+    background: rgba(255,255,255,0.10);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 13px;
+    font-family: var(--sf);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    pointer-events: all;
+    transition: all 0.18s ease;
+    letter-spacing: -0.01em;
+    margin-top: 0;
+  }
+  #startBtn2:hover {
+    background: rgba(255,255,255,0.14);
+    transform: translateY(-1px);
+  }
+
+  #difficultySelect2 {
+    display: flex;
+    gap: 0;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 3px;
+    width: 100%;
+    margin-bottom: 8px;
+    pointer-events: all;
+  }
+  #difficultySelect2 .diffBtn { pointer-events: all; }
+</style>
+</head>
+<body>
+<div id="gameContainer">
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+  <div id="ui">
+    <!-- HUD: health / shield -->
+    <div id="hud">
+      <div class="hud-row">
+        <div class="hud-label">Health</div>
+        <div class="hud-value">❤️ <span id="hpVal">100</span></div>
+        <div class="bar-track"><div id="healthFill" style="width:100%"></div></div>
+      </div>
+      <div class="hud-row">
+        <div class="hud-label">Shield</div>
+        <div class="hud-value">🛡️ <span id="shieldVal">0</span></div>
+        <div class="bar-track"><div id="shieldFill" style="width:0%"></div></div>
+      </div>
+      <div class="hud-mats">
+        <span>🧱 <span id="matsVal">0</span></span>
+        <span>💊 <span id="potVal">0</span></span>
+      </div>
+    </div>
+
+    <!-- Storm info -->
+    <div id="stormInfo">
+      <div class="storm-title">⛈ Storm</div>
+      Closes in <strong><span id="stormTimer">--</span>s</strong><br>
+      👥 <span id="playersLeft">--</span> remaining<br>
+      <span id="stormDmg"></span>
+    </div>
+
+    <!-- Kill feed -->
+    <div id="killFeed"></div>
+
+    <!-- Ammo -->
+    <div id="ammoInfo">
+      <div id="weaponName">ASSAULT RIFLE</div>
+      <div class="ammo-count"><span id="ammoCount">30</span></div>
+      <div class="ammo-reserve">/ <span id="ammoReserve">90</span></div>
+    </div>
+
+    <!-- Build hint -->
+    <div id="buildMenu">
+      <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:600;">F</kbd> Build &nbsp;
+      <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:600;">Q</kbd> Wall &nbsp;
+      <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:600;">E</kbd> Ramp
+    </div>
+
+    <!-- Inventory -->
+    <div id="inventory">
+      <div class="slot active" id="slot0"><div class="slotIcon">🔫</div><div>AR</div></div>
+      <div class="slot" id="slot1"><div class="slotIcon">💥</div><div>SMG</div></div>
+      <div class="slot" id="slot2"><div class="slotIcon">🎯</div><div>SNP</div></div>
+      <div class="slot" id="slot3"><div class="slotIcon">💊</div><div>MED</div></div>
+      <div class="slot" id="slot4"><div class="slotIcon">🛡️</div><div>SHD</div></div>
+    </div>
+
+    <!-- Minimap -->
+    <canvas id="minimap" width="110" height="110"></canvas>
+
+    <!-- Build mode label -->
+    <div id="buildModeLabel">🔨 Build Mode</div>
+  </div>
+
+  <!-- ── START OVERLAY ── -->
+  <div id="overlay">
+    <div class="overlay-card">
+      <div class="overlay-icon">⚡</div>
+      <div class="overlay-title">BattleZone</div>
+      <div class="overlay-sub">Last player standing wins. Loot weapons, build cover, stay inside the safe zone.</div>
+
+      <div class="diff-label-heading">Difficulty</div>
+      <div id="difficultySelect">
+        <button class="diffBtn easy selected" data-diff="easy">🟢 Easy</button>
+        <button class="diffBtn medium" data-diff="medium">🟡 Medium</button>
+        <button class="diffBtn hard" data-diff="hard">🔴 Hard</button>
+      </div>
+      <div id="diffLabel">More loot, slower enemies, forgiving storm</div>
+
+      <button id="startBtn">Drop In</button>
+
+      <div class="controls-hint">
+        <kbd>WASD</kbd> Move &nbsp; <kbd>Click</kbd> Shoot &nbsp; <kbd>R</kbd> Reload<br>
+        <kbd>1–5</kbd> Weapons &nbsp; <kbd>F</kbd> Build &nbsp; <kbd>Space</kbd> Heal
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GAME OVER ── -->
+  <div id="gameOver">
+    <div class="overlay-card">
+      <div class="overlay-icon" id="goIcon">💀</div>
+      <div id="winMsg">🏆 Victory Royale!</div>
+      <div id="loseMsg">💀 Eliminated</div>
+      <div id="finalStats"></div>
+
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);align-self:flex-start;margin-bottom:8px;">Play Again — Difficulty</div>
+      <div id="difficultySelect2">
+        <button class="diffBtn easy selected" data-diff2="easy">🟢 Easy</button>
+        <button class="diffBtn medium" data-diff2="medium">🟡 Medium</button>
+        <button class="diffBtn hard" data-diff2="hard">🔴 Hard</button>
+      </div>
+      <button id="startBtn2">Play Again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const miniCanvas = document.getElementById('minimap');
+const mctx = miniCanvas.getContext('2d');
+const W = 800, H = 600;
+
+// ── Difficulty ──────────────────────────────────────────────
+const WORLD = 1600;
+
+const DIFFICULTIES = {
+  easy: {
+    label: 'More loot, slower enemies, forgiving storm',
+    playerShield: 50, playerMats: 150, playerPots: 5, playerShieldPots: 3, playerSpeed: 4.5,
+    enemyCount: 10, enemyHpMin: 40, enemyHpRange: 20, enemySpeedMin: 0.6, enemySpeedRange: 0.3,
+    enemyAggroMin: 140, enemyAggroRange: 40, enemyDmgMult: 0.3, enemyFireMult: 3.5,
+    lootCount: 55,
+    stormPhases: [
+      { targetRadius: WORLD*0.4,  timer: 70, damage: 1 },
+      { targetRadius: WORLD*0.22, timer: 60, damage: 2 },
+      { targetRadius: WORLD*0.10, timer: 50, damage: 3 },
+      { targetRadius: WORLD*0.03, timer: 40, damage: 5 },
+    ]
+  },
+  medium: {
+    label: 'Balanced — the classic experience',
+    playerShield: 0, playerMats: 50, playerPots: 2, playerShieldPots: 1, playerSpeed: 3.5,
+    enemyCount: 19, enemyHpMin: 80, enemyHpRange: 40, enemySpeedMin: 1.2, enemySpeedRange: 0.8,
+    enemyAggroMin: 250, enemyAggroRange: 100, enemyDmgMult: 0.6, enemyFireMult: 1.5,
+    lootCount: 30,
+    stormPhases: [
+      { targetRadius: WORLD*0.4,  timer: 40, damage: 2 },
+      { targetRadius: WORLD*0.22, timer: 35, damage: 4 },
+      { targetRadius: WORLD*0.10, timer: 25, damage: 6 },
+      { targetRadius: WORLD*0.03, timer: 20, damage: 10 },
+    ]
+  },
+  hard: {
+    label: 'More enemies, faster & deadlier, rapid storm',
+    playerShield: 0, playerMats: 20, playerPots: 1, playerShieldPots: 0, playerSpeed: 3.0,
+    enemyCount: 28, enemyHpMin: 100, enemyHpRange: 60, enemySpeedMin: 1.8, enemySpeedRange: 1.0,
+    enemyAggroMin: 350, enemyAggroRange: 150, enemyDmgMult: 0.9, enemyFireMult: 0.9,
+    lootCount: 18,
+    stormPhases: [
+      { targetRadius: WORLD*0.4,  timer: 25, damage: 4 },
+      { targetRadius: WORLD*0.22, timer: 20, damage: 8 },
+      { targetRadius: WORLD*0.10, timer: 15, damage: 12 },
+      { targetRadius: WORLD*0.03, timer: 12, damage: 18 },
+    ]
+  }
+};
+let currentDifficulty = 'easy';
+
+const TILE = 32;
+let gameRunning = false;
+let gameTime = 0;
+let kills = 0;
+let buildMode = false;
+let buildType = 'wall';
+let cam = { x: 0, y: 0 };
+
+let storm = {
+  cx: WORLD/2, cy: WORLD/2,
+  radius: WORLD * 0.55,
+  targetRadius: WORLD * 0.15,
+  shrinkTimer: 30,
+  maxTimer: 30,
+  phase: 0,
+  damage: 2,
+  phases: [
+    { targetRadius: WORLD*0.4, timer: 40, damage: 2 },
+    { targetRadius: WORLD*0.22, timer: 35, damage: 4 },
+    { targetRadius: WORLD*0.10, timer: 25, damage: 6 },
+    { targetRadius: WORLD*0.03, timer: 20, damage: 10 },
+  ]
+};
+
+let player = {
+  x: WORLD/2, y: WORLD/2,
+  vx: 0, vy: 0,
+  size: 14,
+  hp: 100, maxHp: 100,
+  shield: 0, maxShield: 50,
+  speed: 3.5,
+  angle: 0,
+  weapon: 0,
+  reloading: false,
+  reloadTimer: 0,
+  mats: 50,
+  pots: 2,
+  shieldPots: 1,
+  alive: true,
+  invincible: 0,
+};
+
+const WEAPONS = [
+  { name:'ASSAULT RIFLE', emoji:'🔫', damage:25, rate:8, range:350, spread:0.05, ammo:30, maxAmmo:30, reserve:120, reloadTime:1.8, auto:true, color:'#f39c12' },
+  { name:'SMG',           emoji:'💥', damage:15, rate:3, range:200, spread:0.12, ammo:20, maxAmmo:20, reserve:100, reloadTime:1.4, auto:true, color:'#e67e22' },
+  { name:'SNIPER',        emoji:'🎯', damage:90, rate:60,range:600, spread:0.01, ammo:5,  maxAmmo:5,  reserve:20,  reloadTime:2.5, auto:false,color:'#9b59b6' },
+  { name:'SHOTGUN',       emoji:'🔥', damage:70, rate:20,range:150, spread:0.25, ammo:6,  maxAmmo:6,  reserve:40,  reloadTime:2.0, auto:false,color:'#e74c3c', pellets:6 },
+  { name:'PISTOL',        emoji:'🔒', damage:35, rate:15,range:280, spread:0.08, ammo:12, maxAmmo:12, reserve:60,  reloadTime:1.2, auto:false,color:'#95a5a6' }
+];
+let weapons = WEAPONS.map(w => ({...w, currentAmmo: w.ammo, reserveAmmo: w.reserve, fireCooldown: 0}));
+
+let enemies=[], bullets=[], loot=[], structures=[], obstacles=[], particles=[], damageNums=[];
+const keys = {};
+let mouse = { x: W/2, y: H/2, down: false };
+let mapTiles = [];
+
+function noise(x, y) {
+  let n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453123;
+  return n - Math.floor(n);
+}
+
+function initMap() {
+  mapTiles = [];
+  for (let ty = 0; ty < WORLD/TILE; ty++) {
+    mapTiles[ty] = [];
+    for (let tx = 0; tx < WORLD/TILE; tx++) {
+      let n = noise(tx*.1,ty*.1)*.5 + noise(tx*.3,ty*.3)*.3 + noise(tx*.7,ty*.7)*.2;
+      mapTiles[ty][tx] = n > 0.6 ? 2 : (n > 0.45 ? 1 : 0);
+    }
+  }
+}
+
+function initGame() {
+  kills = 0; gameTime = 0;
+  buildMode = false;
+  document.getElementById('buildModeLabel').style.display = 'none';
+
+  const diff = DIFFICULTIES[currentDifficulty];
+
+  player.x = WORLD/2 + (Math.random()-.5)*200;
+  player.y = WORLD/2 + (Math.random()-.5)*200;
+  player.hp = 100; player.shield = diff.playerShield;
+  player.maxShield = 50;
+  player.mats = diff.playerMats; player.pots = diff.playerPots; player.shieldPots = diff.playerShieldPots;
+  player.speed = diff.playerSpeed;
+  player.alive = true; player.invincible = 0;
+  player.weapon = 0;
+
+  weapons = WEAPONS.map(w => ({...w, currentAmmo: w.ammo, reserveAmmo: w.reserve, fireCooldown: 0}));
+
+  storm.radius = WORLD * 0.55;
+  storm.phase = 0;
+  storm.phases = diff.stormPhases;
+  storm.shrinkTimer = 30;
+  storm.maxTimer = 30;
+
+  enemies=[]; bullets=[]; loot=[]; structures=[]; particles=[]; damageNums=[];
+  initMap();
+  spawnObstacles();
+  spawnEnemies(diff.enemyCount);
+  spawnLoot(diff.lootCount);
+  updateHUD();
+}
+
+function spawnObstacles() {
+  obstacles = [];
+  for (let i = 0; i < 120; i++) {
+    obstacles.push({ x: Math.random()*WORLD, y: Math.random()*WORLD, type: Math.random()<.6?'tree':'rock', size: 20+Math.random()*20, hp:100 });
+  }
+  for (let i = 0; i < 8; i++) {
+    let hx = 100+Math.random()*(WORLD-200), hy = 100+Math.random()*(WORLD-200);
+    for (let j = 0; j < 4; j++) {
+      structures.push({ x:hx+(j%2)*80, y:hy+Math.floor(j/2)*60, w:80, h:12, type:'wall', team:'env', hp:150 });
+    }
+  }
+}
+
+function spawnEnemies(n) {
+  const diff = DIFFICULTIES[currentDifficulty];
+  for (let i = 0; i < n; i++) {
+    let angle = (i/n)*Math.PI*2;
+    let d = 200+Math.random()*400;
+    enemies.push({
+      x: WORLD/2+Math.cos(angle)*d, y: WORLD/2+Math.sin(angle)*d,
+      hp: diff.enemyHpMin+Math.random()*diff.enemyHpRange,
+      maxHp: diff.enemyHpMin+diff.enemyHpRange,
+      angle: 0,
+      speed: diff.enemySpeedMin+Math.random()*diff.enemySpeedRange,
+      size: 13,
+      weapon: Math.floor(Math.random()*3),
+      fireCooldown: Math.floor(Math.random()*60),
+      alive: true, state:'patrol',
+      patrolTarget: {x:Math.random()*WORLD, y:Math.random()*WORLD},
+      aggroRange: diff.enemyAggroMin+Math.random()*diff.enemyAggroRange,
+      lootDropped: false,
+    });
+  }
+}
+
+function spawnLoot(n) {
+  loot = [];
+  const lootTypes = ['ammo_ar','ammo_smg','ammo_sniper','medkit','shield_pot','mats','weapon_shotgun','weapon_pistol'];
+  for (let i = 0; i < n; i++) {
+    loot.push({ x:80+Math.random()*(WORLD-160), y:80+Math.random()*(WORLD-160), type:lootTypes[Math.floor(Math.random()*lootTypes.length)], bob:Math.random()*Math.PI*2 });
+  }
+}
+
+function spawnParticle(x, y, color, count=5) {
+  for (let i = 0; i < count; i++) {
+    let a = Math.random()*Math.PI*2, s = 1+Math.random()*3;
+    particles.push({ x, y, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:30, maxLife:30, color, size:2+Math.random()*3 });
+  }
+}
+
+function addDamageNum(x, y, dmg, color='#FF453A') {
+  damageNums.push({ x, y, vy:-1.5, dmg:Math.round(dmg), life:60, color });
+}
+
+function addKillFeed(msg) {
+  let kf = document.getElementById('killFeed');
+  let el = document.createElement('div');
+  el.className = 'killMsg';
+  el.textContent = msg;
+  kf.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+function dist(a, b) { return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2); }
+function inStorm(x, y) { return dist({x,y}, storm) > storm.radius; }
+
+let frameCount = 0;
+
+function update() {
+  if (!gameRunning) return;
+  frameCount++;
+  gameTime += 1/60;
+
+  // Storm
+  storm.shrinkTimer -= 1/60;
+  if (storm.shrinkTimer <= 0 && storm.phase < storm.phases.length) {
+    let ph = storm.phases[storm.phase];
+    storm.targetRadius = ph.targetRadius;
+    storm.damage = ph.damage;
+    storm.phase++;
+    storm.shrinkTimer = ph.timer;
+    storm.maxTimer = ph.timer;
+  }
+  if (storm.radius > storm.targetRadius) storm.radius -= (storm.radius-storm.targetRadius)*0.003;
+
+  // Player
+  if (player.alive) {
+    let dx=0, dy=0;
+    if (keys['w']||keys['arrowup'])    dy-=1;
+    if (keys['s']||keys['arrowdown'])  dy+=1;
+    if (keys['a']||keys['arrowleft'])  dx-=1;
+    if (keys['d']||keys['arrowright']) dx+=1;
+    let mag = Math.sqrt(dx*dx+dy*dy);
+    if (mag>0) { dx/=mag; dy/=mag; }
+    player.vx = dx*player.speed; player.vy = dy*player.speed;
+    player.x = Math.max(10, Math.min(WORLD-10, player.x+player.vx));
+    player.y = Math.max(10, Math.min(WORLD-10, player.y+player.vy));
+
+    let wx = player.x-cam.x, wy = player.y-cam.y;
+    player.angle = Math.atan2(mouse.y-wy, mouse.x-wx);
+
+    let w = weapons[player.weapon];
+    if (w.fireCooldown>0) w.fireCooldown--;
+
+    if (!buildMode && mouse.down && !player.reloading && w.fireCooldown<=0) {
+      if (w.currentAmmo>0) {
+        fire(player, w, player.angle, 'player');
+        w.currentAmmo--;
+        w.fireCooldown = w.rate;
+        if (!w.auto) mouse.down = false;
+      } else if (w.reserveAmmo>0) {
+        startReload(player.weapon);
+      }
+    }
+
+    if (player.reloading) {
+      player.reloadTimer -= 1/60;
+      if (player.reloadTimer<=0) {
+        let w2 = weapons[player.weapon];
+        let need = w2.maxAmmo-w2.currentAmmo;
+        let take = Math.min(need, w2.reserveAmmo);
+        w2.currentAmmo += take; w2.reserveAmmo -= take;
+        player.reloading = false;
+      }
+    }
+
+    if (keys[' '] && !player.reloading) {
+      if (player.pots>0 && player.hp<100) { player.hp=Math.min(100,player.hp+50); player.pots--; spawnParticle(player.x,player.y,'#30D158',8); }
+      else if (player.shieldPots>0 && player.shield<player.maxShield) { player.shield=Math.min(player.maxShield,player.shield+50); player.shieldPots--; spawnParticle(player.x,player.y,'#0A84FF',8); }
+    }
+
+    if (inStorm(player.x, player.y)) {
+      player.hp -= storm.damage*(1/60);
+      if (frameCount%30===0) spawnParticle(player.x,player.y,'#BF5AF2',4);
+    }
+
+    loot = loot.filter(l => {
+      if (dist(player,l)<25) { pickupLoot(l); spawnParticle(l.x,l.y,'#FFD60A',6); return false; }
+      l.bob+=0.05; return true;
+    });
+
+    if (player.invincible>0) player.invincible--;
+    if (player.hp<=0) { player.alive=false; endGame(false); }
+  }
+
+  // Enemies
+  let aliveEnemies = 0;
+  enemies.forEach(e => {
+    if (!e.alive) return;
+    aliveEnemies++;
+    let d = dist(e, player);
+    if (d<e.aggroRange) e.state='chase';
+    else if (e.state!=='patrol') e.state='patrol';
+
+    if (e.state==='chase') {
+      let ang = Math.atan2(player.y-e.y, player.x-e.x);
+      e.angle=ang; e.x+=Math.cos(ang)*e.speed; e.y+=Math.sin(ang)*e.speed;
+    } else {
+      let dx2=e.patrolTarget.x-e.x, dy2=e.patrolTarget.y-e.y;
+      let dm=Math.sqrt(dx2*dx2+dy2*dy2);
+      if (dm<20) { e.patrolTarget={x:Math.random()*WORLD,y:Math.random()*WORLD}; }
+      else { e.x+=(dx2/dm)*e.speed*.5; e.y+=(dy2/dm)*e.speed*.5; e.angle=Math.atan2(dy2,dx2); }
+    }
+    e.x=Math.max(10,Math.min(WORLD-10,e.x)); e.y=Math.max(10,Math.min(WORLD-10,e.y));
+    if (inStorm(e.x,e.y)) e.hp-=storm.damage*0.5*(1/60);
+
+    if (e.state==='chase' && player.alive && e.fireCooldown<=0) {
+      let ew=WEAPONS[e.weapon], spread=ew.spread*1.5;
+      let ang2=Math.atan2(player.y-e.y,player.x-e.x)+(Math.random()-.5)*spread;
+      bullets.push({ x:e.x,y:e.y, vx:Math.cos(ang2)*8, vy:Math.sin(ang2)*8,
+        damage:ew.damage*DIFFICULTIES[currentDifficulty].enemyDmgMult,
+        range:ew.range, dist:0, team:'enemy', size:3, color:'#FF453A' });
+      e.fireCooldown=ew.rate*(DIFFICULTIES[currentDifficulty].enemyFireMult+Math.random());
+    }
+    if (e.fireCooldown>0) e.fireCooldown--;
+
+    if (e.hp<=0) {
+      e.alive=false; kills++;
+      addKillFeed(`💀 Enemy ${Math.floor(Math.random()*100)} eliminated!`);
+      spawnParticle(e.x,e.y,'#FF453A',12);
+      loot.push({x:e.x,y:e.y,type:Math.random()<.5?'ammo_ar':'medkit',bob:0});
+      loot.push({x:e.x+20,y:e.y+10,type:'mats',bob:1});
+    }
+  });
+
+  if (buildMode && mouse.down) {
+    let wx2=Math.round((mouse.x+cam.x-30)/60)*60, wy2=Math.round((mouse.y+cam.y-30)/60)*60;
+    if (player.mats>=10) {
+      let exists=structures.find(s=>s.x===wx2&&s.y===wy2&&s.team==='player');
+      if (!exists) { structures.push({x:wx2,y:wy2,w:60,h:12,type:buildType,team:'player',hp:100}); player.mats-=10; mouse.down=false; }
+    }
+  }
+
+  bullets = bullets.filter(b => {
+    b.x+=b.vx; b.y+=b.vy;
+    b.dist+=Math.sqrt(b.vx**2+b.vy**2);
+    if (b.dist>b.range||b.x<0||b.x>WORLD||b.y<0||b.y>WORLD) return false;
+
+    if (b.team==='enemy' && player.alive && player.invincible<=0) {
+      if (dist(b,player)<player.size+4) {
+        let dmg=b.damage;
+        if (player.shield>0) { let sd=Math.min(player.shield,dmg); player.shield-=sd; dmg-=sd; }
+        player.hp-=dmg; player.hp=Math.max(0,player.hp);
+        addDamageNum(player.x,player.y-20,b.damage,'#FF453A');
+        player.invincible=5; spawnParticle(b.x,b.y,'#FF453A',4); return false;
+      }
+    }
+    if (b.team==='player') {
+      let hit=false;
+      enemies.forEach(e => {
+        if (!e.alive||hit) return;
+        if (dist(b,e)<e.size+4) { e.hp-=b.damage; addDamageNum(e.x,e.y-20,b.damage); spawnParticle(b.x,b.y,'#FF453A',4); hit=true; }
+      });
+      if (hit) return false;
+      for (let s of structures) {
+        if (b.x>=s.x&&b.x<=s.x+s.w&&b.y>=s.y&&b.y<=s.y+s.h) { s.hp-=b.damage*.5; spawnParticle(b.x,b.y,'#95a5a6',3); return false; }
+      }
+    }
+    return true;
+  });
+
+  structures=structures.filter(s=>s.hp>0);
+  particles=particles.filter(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.1;p.life--;return p.life>0;});
+  damageNums=damageNums.filter(d=>{d.y+=d.vy;d.life--;return d.life>0;});
+
+  cam.x=Math.max(0,Math.min(WORLD-W,player.x-W/2));
+  cam.y=Math.max(0,Math.min(WORLD-H,player.y-H/2));
+
+  if (aliveEnemies===0&&player.alive) endGame(true);
+  updateHUD();
+}
+
+function fire(source, w, angle, team) {
+  let pellets=w.pellets||1;
+  for (let p=0;p<pellets;p++) {
+    let spread=(Math.random()-.5)*w.spread*(pellets>1?3:1);
+    let a=angle+spread;
+    bullets.push({ x:source.x,y:source.y, vx:Math.cos(a)*10, vy:Math.sin(a)*10,
+      damage:w.damage/pellets, range:w.range, dist:0, team,
+      size:team==='player'?4:3, color:team==='player'?'#FFD60A':'#FF453A' });
+  }
+  spawnParticle(source.x,source.y,'#FF9F0A',2);
+}
+
+function startReload(idx) {
+  if (player.reloading||weapons[idx].reserveAmmo<=0||weapons[idx].currentAmmo===weapons[idx].maxAmmo) return;
+  player.reloading=true; player.reloadTimer=weapons[idx].reloadTime;
+}
+
+function pickupLoot(l) {
+  switch(l.type) {
+    case 'ammo_ar':       weapons[0].reserveAmmo=Math.min(weapons[0].reserveAmmo+30,180); break;
+    case 'ammo_smg':      weapons[1].reserveAmmo=Math.min(weapons[1].reserveAmmo+40,160); break;
+    case 'ammo_sniper':   weapons[2].reserveAmmo=Math.min(weapons[2].reserveAmmo+10,30); break;
+    case 'medkit':        player.pots=Math.min(player.pots+1,5); break;
+    case 'shield_pot':    player.shieldPots=Math.min(player.shieldPots+1,3); break;
+    case 'mats':          player.mats=Math.min(player.mats+30,999); break;
+    case 'weapon_shotgun':weapons[3].reserveAmmo=Math.min(weapons[3].reserveAmmo+20,60); break;
+    case 'weapon_pistol': weapons[4].reserveAmmo=Math.min(weapons[4].reserveAmmo+20,80); break;
+  }
+}
+
+function endGame(win) {
+  gameRunning=false;
+  let go=document.getElementById('gameOver');
+  document.getElementById('goIcon').textContent = win ? '🏆' : '💀';
+  document.getElementById('winMsg').style.display  = win?'block':'none';
+  document.getElementById('loseMsg').style.display = win?'none':'block';
+  document.getElementById('finalStats').innerHTML =
+    `Eliminations: <strong>${kills}</strong><br>Survived: <strong>${Math.floor(gameTime)}s</strong><br>Players remaining: <strong>${enemies.filter(e=>e.alive).length+1}</strong>`;
+  go.style.display='flex';
+}
+
+function updateHUD() {
+  document.getElementById('hpVal').textContent = Math.max(0,Math.round(player.hp));
+  document.getElementById('healthFill').style.width = Math.max(0,player.hp)+'%';
+  document.getElementById('shieldFill').style.width = (player.shield/player.maxShield*100)+'%';
+  document.getElementById('shieldVal').textContent = Math.round(player.shield);
+  document.getElementById('matsVal').textContent = player.mats;
+  document.getElementById('potVal').textContent = player.pots;
+  let w=weapons[player.weapon];
+  document.getElementById('weaponName').textContent = w.name;
+  document.getElementById('ammoCount').textContent = player.reloading?'…':w.currentAmmo;
+  document.getElementById('ammoReserve').textContent = w.reserveAmmo;
+  let left=enemies.filter(e=>e.alive).length+1;
+  document.getElementById('playersLeft').textContent = left;
+  document.getElementById('stormTimer').textContent = Math.ceil(storm.shrinkTimer);
+  document.getElementById('stormDmg').textContent = inStorm(player.x,player.y)?'⚠️ IN STORM!':'';
+  for (let i=0;i<5;i++) {
+    document.getElementById('slot'+i).className='slot'+(player.weapon===i?' active':'');
+  }
+}
+
+// ── Drawing ──────────────────────────────────────────────
+function drawTile(tx,ty,tile) {
+  let colors=['#4a7c4e','#7a6840','#888'];
+  ctx.fillStyle=colors[tile]||'#4a7c4e';
+  ctx.fillRect(tx*TILE-cam.x, ty*TILE-cam.y, TILE, TILE);
+}
+
+function drawMap() {
+  let stx=Math.floor(cam.x/TILE), sty=Math.floor(cam.y/TILE);
+  let etx=Math.ceil((cam.x+W)/TILE), ety=Math.ceil((cam.y+H)/TILE);
+  for (let ty=Math.max(0,sty);ty<Math.min(WORLD/TILE,ety);ty++)
+    for (let tx=Math.max(0,stx);tx<Math.min(WORLD/TILE,etx);tx++)
+      drawTile(tx,ty,mapTiles[ty][tx]);
+}
+
+function drawStorm() {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0,0,W,H);
+  ctx.arc(storm.cx-cam.x, storm.cy-cam.y, storm.radius, 0, Math.PI*2, true);
+  ctx.fillStyle='rgba(100,80,200,0.35)';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(storm.cx-cam.x, storm.cy-cam.y, storm.radius, 0, Math.PI*2);
+  ctx.strokeStyle='rgba(191,90,242,0.8)';
+  ctx.lineWidth=3; ctx.stroke();
+  ctx.restore();
+}
+
+function drawEntity(x,y,size,color,angle,team) {
+  let sx=x-cam.x, sy=y-cam.y;
+  if (sx<-50||sx>W+50||sy<-50||sy>H+50) return;
+  ctx.save();
+  ctx.translate(sx,sy);
+  ctx.rotate(angle);
+  ctx.fillStyle=color;
+  ctx.beginPath(); ctx.arc(0,0,size,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle=team==='player'?'rgba(255,255,255,0.9)':'#c0392b';
+  ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle=team==='player'?'#ecf0f1':'#FF453A';
+  ctx.fillRect(size-2,-3,size+2,6);
+  ctx.restore();
+}
+
+function drawObstacle(o) {
+  let sx=o.x-cam.x, sy=o.y-cam.y;
+  if (sx<-80||sx>W+80||sy<-80||sy>H+80) return;
+  if (o.type==='tree') {
+    ctx.fillStyle='#2d5a27'; ctx.beginPath(); ctx.arc(sx,sy,o.size,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#1a3a15'; ctx.beginPath(); ctx.arc(sx,sy,o.size*.6,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#5d3a1a'; ctx.fillRect(sx-4,sy+o.size-5,8,10);
+  } else {
+    ctx.fillStyle='#7f8c8d'; ctx.beginPath(); ctx.ellipse(sx,sy,o.size,o.size*.7,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#95a5a6'; ctx.beginPath(); ctx.ellipse(sx-o.size*.2,sy-o.size*.2,o.size*.5,o.size*.4,0,0,Math.PI*2); ctx.fill();
+  }
+}
+
+function drawStructure(s) {
+  let sx=s.x-cam.x, sy=s.y-cam.y;
+  if (sx<-100||sx>W+100||sy<-100||sy>H+100) return;
+  ctx.fillStyle=s.team==='player'?'#0A84FF':'#7f8c8d';
+  ctx.strokeStyle=s.team==='player'?'#2296FF':'#636e72';
+  ctx.lineWidth=2; ctx.fillRect(sx,sy,s.w,s.h); ctx.strokeRect(sx,sy,s.w,s.h);
+  let hpPct=s.hp/150;
+  ctx.fillStyle=`hsl(${hpPct*120},80%,50%)`; ctx.fillRect(sx,sy-5,s.w*hpPct,3);
+}
+
+function drawLoot(l) {
+  let sx=l.x-cam.x, sy=l.y-cam.y+Math.sin(l.bob)*3;
+  if (sx<-40||sx>W+40) return;
+  ctx.save();
+  ctx.shadowBlur=10; ctx.shadowColor='#FFD60A';
+  ctx.fillStyle='#FFD60A'; ctx.beginPath(); ctx.arc(l.x-cam.x,l.y-cam.y+Math.sin(l.bob)*3,7,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle='#000'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+  let icons={ammo_ar:'🔫',ammo_smg:'💥',ammo_sniper:'🎯',medkit:'💊',shield_pot:'🛡️',mats:'🧱',weapon_shotgun:'🔥',weapon_pistol:'🔒'};
+  ctx.fillText(icons[l.type]||'?', l.x-cam.x, l.y-cam.y+Math.sin(l.bob)*3+4);
+}
+
+function drawBullet(b) {
+  let sx=b.x-cam.x, sy=b.y-cam.y;
+  ctx.save(); ctx.shadowBlur=6; ctx.shadowColor=b.color;
+  ctx.fillStyle=b.color; ctx.beginPath(); ctx.arc(sx,sy,b.size,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawHealthBar(e) {
+  let sx=e.x-cam.x, sy=e.y-cam.y, bw=e.size*2.5;
+  ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.fillRect(sx-bw/2,sy-e.size-10,bw,5);
+  ctx.fillStyle=`hsl(${(e.hp/e.maxHp)*120},80%,50%)`; ctx.fillRect(sx-bw/2,sy-e.size-10,bw*(e.hp/e.maxHp),5);
+}
+
+function drawParticles() {
+  particles.forEach(p=>{
+    let sx=p.x-cam.x, sy=p.y-cam.y;
+    ctx.globalAlpha=p.life/p.maxLife;
+    ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(sx,sy,p.size*(p.life/p.maxLife),0,Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha=1;
+}
+
+function drawDamageNums() {
+  damageNums.forEach(d=>{
+    let sx=d.x-cam.x, sy=d.y-cam.y;
+    ctx.globalAlpha=d.life/60;
+    ctx.fillStyle=d.color; ctx.font='bold 14px -apple-system,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(d.dmg,sx,sy);
+  });
+  ctx.globalAlpha=1;
+}
+
+function drawCrosshair() {
+  ctx.strokeStyle='rgba(255,255,255,0.75)'; ctx.lineWidth=1.5;
+  let x=mouse.x, y=mouse.y, s=8;
+  ctx.beginPath(); ctx.moveTo(x-s,y); ctx.lineTo(x+s,y); ctx.moveTo(x,y-s); ctx.lineTo(x,y+s); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x,y,12,0,Math.PI*2); ctx.stroke();
+}
+
+function drawBuildGhost() {
+  if (!buildMode) return;
+  let wx=Math.round((mouse.x+cam.x-30)/60)*60, wy=Math.round((mouse.y+cam.y-30)/60)*60;
+  ctx.strokeStyle='rgba(10,132,255,0.8)'; ctx.fillStyle='rgba(10,132,255,0.18)';
+  ctx.lineWidth=2; ctx.setLineDash([5,5]);
+  ctx.fillRect(wx-cam.x,wy-cam.y,60,12); ctx.strokeRect(wx-cam.x,wy-cam.y,60,12);
+  ctx.setLineDash([]);
+}
+
+function drawMinimap() {
+  let mw=110, mh=110, scale=mw/WORLD;
+  mctx.fillStyle='rgba(18,18,20,0.92)'; mctx.fillRect(0,0,mw,mh);
+  // Storm
+  mctx.strokeStyle='rgba(191,90,242,0.7)'; mctx.lineWidth=1.5;
+  mctx.beginPath(); mctx.arc(storm.cx*scale,storm.cy*scale,storm.radius*scale,0,Math.PI*2); mctx.stroke();
+  // Enemies
+  enemies.forEach(e=>{if(!e.alive)return; mctx.fillStyle='#FF453A'; mctx.beginPath(); mctx.arc(e.x*scale,e.y*scale,2,0,Math.PI*2); mctx.fill();});
+  // Loot
+  loot.forEach(l=>{mctx.fillStyle='#FFD60A'; mctx.fillRect(l.x*scale-1,l.y*scale-1,2,2);});
+  // Player
+  mctx.fillStyle='#30D158'; mctx.strokeStyle='#fff'; mctx.lineWidth=1;
+  mctx.beginPath(); mctx.arc(player.x*scale,player.y*scale,3,0,Math.PI*2); mctx.fill(); mctx.stroke();
+  // Camera rect
+  mctx.strokeStyle='rgba(255,255,255,0.25)'; mctx.lineWidth=0.5;
+  mctx.strokeRect(cam.x*scale,cam.y*scale,W*scale,H*scale);
+}
+
+function render() {
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#4a7c4e'; ctx.fillRect(0,0,W,H);
+  drawMap();
+  structures.forEach(drawStructure);
+  obstacles.forEach(drawObstacle);
+  loot.forEach(drawLoot);
+  enemies.forEach(e=>{if(!e.alive)return; drawHealthBar(e); drawEntity(e.x,e.y,e.size,'#FF453A',e.angle,'enemy');});
+  if (player.alive) {
+    drawEntity(player.x,player.y,player.size,'#30D158',player.angle,'player');
+    if (player.shield>0) {
+      ctx.save(); ctx.strokeStyle='rgba(10,132,255,0.45)'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(player.x-cam.x,player.y-cam.y,player.size+4,0,Math.PI*2); ctx.stroke(); ctx.restore();
+    }
+  }
+  bullets.forEach(drawBullet);
+  drawStorm();
+  drawParticles();
+  drawDamageNums();
+  drawCrosshair();
+  drawBuildGhost();
+  drawMinimap();
+
+  if (player.reloading) {
+    let prog=1-player.reloadTimer/weapons[player.weapon].reloadTime;
+    ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.fillRect(W/2-60,H-100,120,6);
+    ctx.fillStyle='#0A84FF'; ctx.fillRect(W/2-60,H-100,120*prog,6);
+    ctx.fillStyle='rgba(255,255,255,0.7)'; ctx.font='10px -apple-system,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Reloading…',W/2,H-88);
+  }
+}
+
+// ── Preview render loop (runs always so game is visible under overlays) ──
+function previewLoop() {
+  if (!gameRunning) {
+    // Animate enemies patrolling so preview looks alive
+    enemies.forEach(e => {
+      if (!e.alive) return;
+      let dx=e.patrolTarget.x-e.x, dy=e.patrolTarget.y-e.y;
+      let dm=Math.sqrt(dx*dx+dy*dy);
+      if (dm<20) { e.patrolTarget={x:Math.random()*WORLD,y:Math.random()*WORLD}; }
+      else { e.x+=(dx/dm)*e.speed*.4; e.y+=(dy/dm)*e.speed*.4; e.angle=Math.atan2(dy,dx); }
+      e.x=Math.max(10,Math.min(WORLD-10,e.x));
+      e.y=Math.max(10,Math.min(WORLD-10,e.y));
+    });
+    loot.forEach(l=>l.bob+=0.03);
+    render();
+  }
+  requestAnimationFrame(previewLoop);
+}
+
+function gameLoop() {
+  if (gameRunning) { update(); render(); }
+  requestAnimationFrame(gameLoop);
+}
+
+// ── Events ──────────────────────────────────────────────────
+document.addEventListener('keydown', e=>{
+  keys[e.key.toLowerCase()]=true;
+  if (!gameRunning) return;
+  if (e.key==='r'||e.key==='R') startReload(player.weapon);
+  if (e.key==='f'||e.key==='F') { buildMode=!buildMode; document.getElementById('buildModeLabel').style.display=buildMode?'block':'none'; }
+  if (e.key==='q'||e.key==='Q') buildType='wall';
+  if (e.key==='e'||e.key==='E') buildType='ramp';
+  if (e.key>='1'&&e.key<='5') { player.weapon=parseInt(e.key)-1; player.reloading=false; }
+  e.preventDefault();
+});
+document.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()]=false; });
+document.addEventListener('mousemove', e=>{ let r=canvas.getBoundingClientRect(); mouse.x=e.clientX-r.left; mouse.y=e.clientY-r.top; });
+document.addEventListener('mousedown', e=>{
+  if(e.button===0){
+    let r=canvas.getBoundingClientRect();
+    if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){
+      mouse.down=true;
+    }
+  }
+});
+document.addEventListener('mouseup', e=>{ if(e.button===0) mouse.down=false; });
+canvas.addEventListener('contextmenu', e=>e.preventDefault());
+
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  document.getElementById('overlay').style.display='none';
+  initGame(); gameRunning=true;
+});
+document.getElementById('startBtn2').addEventListener('click', ()=>{
+  document.getElementById('gameOver').style.display='none';
+  initGame(); gameRunning=true;
+});
+
+const DIFF_LABELS = {
+  easy:   'More loot, slower enemies, forgiving storm',
+  medium: 'Balanced — the classic experience',
+  hard:   'More enemies, faster & deadlier, rapid storm'
+};
+
+document.querySelectorAll('[data-diff]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    currentDifficulty=btn.dataset.diff;
+    document.querySelectorAll('[data-diff]').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.getElementById('diffLabel').textContent=DIFF_LABELS[currentDifficulty];
+    // also sync game-over screen
+    document.querySelectorAll('[data-diff2]').forEach(b=>{ b.classList.remove('selected'); if(b.dataset.diff2===currentDifficulty) b.classList.add('selected'); });
+  });
+});
+
+document.querySelectorAll('[data-diff2]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    currentDifficulty=btn.dataset.diff2;
+    document.querySelectorAll('[data-diff2]').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    // also sync start screen
+    document.querySelectorAll('[data-diff]').forEach(b=>{ b.classList.remove('selected'); if(b.dataset.diff===currentDifficulty) b.classList.add('selected'); });
+    document.getElementById('diffLabel').textContent=DIFF_LABELS[currentDifficulty];
+  });
+});
+
+// Boot: build a preview world and start rendering it
+initMap();
+spawnObstacles();
+spawnEnemies(DIFFICULTIES[currentDifficulty].enemyCount);
+spawnLoot(DIFFICULTIES[currentDifficulty].lootCount);
+// Point camera at a nice spot
+cam.x = WORLD/2 - W/2;
+cam.y = WORLD/2 - H/2;
+
+previewLoop();
+gameLoop();
+</script>
+</body>
+</html>
