@@ -65,11 +65,11 @@
     display: none;
   }
 
-  /* Left joystick zone — upper-left portion, buttons sit below */
+  /* Left joystick zone — full bottom-left half */
   #joystickZone {
     position: absolute;
-    left: 0; bottom: 80px;
-    width: 50%; height: calc(55% - 80px);
+    left: 0; bottom: 0;
+    width: 50%; height: 55%;
     pointer-events: all;
   }
 
@@ -103,29 +103,30 @@
     pointer-events: all;
   }
 
-  /* Touch action buttons — left side, above inventory bar */
+  /* Touch action buttons — right side, above minimap (minimap is 110px + 14px = 124px) */
   #touchButtons {
     position: absolute;
-    left: 14px;
-    bottom: 80px;
+    right: 14px;
+    bottom: 130px;
     display: flex;
-    flex-direction: row;
-    gap: 10px;
+    flex-direction: column;
+    gap: 8px;
     pointer-events: all;
+    z-index: 10;
   }
 
   .touch-btn {
-    width: 58px; height: 58px;
-    border-radius: 16px;
+    width: 54px; height: 54px;
+    border-radius: 14px;
     border: 2px solid rgba(255,255,255,0.22);
-    background: rgba(20,20,22,0.82);
+    background: rgba(20,20,22,0.88);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+    font-size: 20px;
     cursor: pointer;
     pointer-events: all;
     transition: all 0.1s ease;
@@ -287,10 +288,10 @@
     100%{ opacity:0; transform:translateY(-6px); }
   }
 
-  /* ammo */
+  /* ammo — moved up to make room for touch buttons below it */
   #ammoInfo {
     position: absolute;
-    bottom: 72px; right: 14px;
+    bottom: 230px; right: 14px;
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     backdrop-filter: blur(24px) saturate(180%);
