@@ -1483,19 +1483,24 @@ const JOYSTICK_RADIUS = 55;
 const aimTouch = { active: false, id: null, shooting: false };
 
 function initTouchControls() {
-  if (!isTouchDevice()) return;
+  const touch = isTouchDevice();
 
-  applyMobileLayout();
+  if (touch) applyMobileLayout();
 
   document.body.classList.add('touch-active');
   document.getElementById('touchControls').style.display = 'block';
-  // Hide keyboard hint
-  document.querySelectorAll('.controls-hint').forEach(el => el.classList.add('touch-hide'));
+  if (touch) document.querySelectorAll('.controls-hint').forEach(el => el.classList.add('touch-hide'));
 
   const joystickZone = document.getElementById('joystickZone');
   const joystickBase = document.getElementById('joystickBase');
   const joystickKnob = document.getElementById('joystickKnob');
   const aimZone = document.getElementById('aimZone');
+
+  // Only activate joystick + aim zones on actual touch devices
+  if (!touch) {
+    joystickZone.style.pointerEvents = 'none';
+    aimZone.style.pointerEvents = 'none';
+  }
 
   function showJoystick(x, y) {
     joystickBase.style.left = x + 'px';
@@ -1605,32 +1610,32 @@ function initTouchControls() {
     }
   }, { passive: false });
 
-  // Action buttons
-  document.getElementById('btnReload').addEventListener('touchstart', e => {
-    e.preventDefault();
-    if (gameRunning) startReload(player.weapon);
-  }, { passive: false });
+  // Action buttons — work on both touch and mouse click
+  function addBtn(id, fn) {
+    const el = document.getElementById(id);
+    el.addEventListener('touchstart', e => { e.preventDefault(); fn(); }, { passive: false });
+    el.addEventListener('click', e => { e.stopPropagation(); fn(); });
+  }
 
-  document.getElementById('btnHeal').addEventListener('touchstart', e => {
-    e.preventDefault();
+  addBtn('btnReload', () => { if (gameRunning) startReload(player.weapon); });
+
+  addBtn('btnHeal', () => {
     if (!gameRunning) return;
     if (player.pots > 0 && player.hp < 100) { player.hp = Math.min(100, player.hp+50); player.pots--; spawnParticle(player.x,player.y,'#30D158',8); updateHUD(); }
     else if (player.shieldPots > 0 && player.shield < player.maxShield) { player.shield = Math.min(player.maxShield, player.shield+50); player.shieldPots--; spawnParticle(player.x,player.y,'#0A84FF',8); updateHUD(); }
-  }, { passive: false });
+  });
 
-  document.getElementById('btnBuild').addEventListener('touchstart', e => {
-    e.preventDefault();
+  addBtn('btnBuild', () => {
     if (!gameRunning) return;
     buildMode = !buildMode;
     document.getElementById('buildModeLabel').style.display = buildMode ? 'block' : 'none';
-  }, { passive: false });
+  });
 
-  // Weapon slots — tap to switch
+  // Weapon slots — tap/click to switch
   for (let i = 0; i < 5; i++) {
-    document.getElementById('slot' + i).addEventListener('touchstart', ev => {
-      ev.preventDefault();
-      if (gameRunning) { player.weapon = i; player.reloading = false; updateHUD(); }
-    }, { passive: false });
+    const slot = document.getElementById('slot' + i);
+    slot.addEventListener('touchstart', ev => { ev.preventDefault(); if (gameRunning) { player.weapon = i; player.reloading = false; updateHUD(); } }, { passive: false });
+    slot.addEventListener('click', () => { if (gameRunning) { player.weapon = i; player.reloading = false; updateHUD(); } });
   }
 }
 
