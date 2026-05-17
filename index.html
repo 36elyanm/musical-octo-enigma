@@ -65,11 +65,11 @@
     display: none;
   }
 
-  /* Left joystick zone */
+  /* Left joystick zone — upper-left portion, buttons sit below */
   #joystickZone {
     position: absolute;
-    left: 0; bottom: 0;
-    width: 50%; height: 55%;
+    left: 0; bottom: 80px;
+    width: 50%; height: calc(55% - 80px);
     pointer-events: all;
   }
 
@@ -95,41 +95,52 @@
     box-shadow: 0 2px 12px rgba(0,0,0,0.4);
   }
 
-  /* Right aim/shoot zone */
+  /* Right aim/shoot zone — leave bottom-right clear for minimap/ammo */
   #aimZone {
     position: absolute;
     right: 0; top: 0;
-    width: 50%; height: 100%;
+    width: 50%; height: 75%;
     pointer-events: all;
   }
 
-  /* Touch action buttons */
+  /* Touch action buttons — left side, above inventory bar */
   #touchButtons {
     position: absolute;
-    right: 14px;
+    left: 14px;
     bottom: 80px;
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    flex-direction: row;
+    gap: 10px;
     pointer-events: all;
   }
 
   .touch-btn {
-    width: 52px; height: 52px;
-    border-radius: 50%;
+    width: 58px; height: 58px;
+    border-radius: 16px;
     border: 2px solid rgba(255,255,255,0.22);
-    background: var(--glass-bg);
+    background: rgba(20,20,22,0.82);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 22px;
     cursor: pointer;
     pointer-events: all;
     transition: all 0.1s ease;
     -webkit-tap-highlight-color: transparent;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .touch-btn-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-top: 1px;
+    line-height: 1;
   }
 
   .touch-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.15); }
@@ -143,6 +154,9 @@
 
   /* Hide keyboard hints on touch */
   .touch-hide { display: none !important; }
+
+  /* On touch: hide the keyboard build hint bar since we have buttons */
+  body.touch-active #buildMenu { display: none !important; }
 
   /* ── HUD ─────────────────────────────────────────── */
   #ui {
@@ -683,9 +697,9 @@
     </div>
     <div id="aimZone"></div>
     <div id="touchButtons">
-      <div class="touch-btn" id="btnBuild">🔨</div>
-      <div class="touch-btn" id="btnHeal">💊</div>
-      <div class="touch-btn" id="btnReload">🔄</div>
+      <div class="touch-btn" id="btnBuild">🔨<span class="touch-btn-label">Build</span></div>
+      <div class="touch-btn" id="btnHeal">💊<span class="touch-btn-label">Heal</span></div>
+      <div class="touch-btn" id="btnReload">🔄<span class="touch-btn-label">Reload</span></div>
     </div>
   </div>
 
@@ -1473,6 +1487,7 @@ function initTouchControls() {
 
   applyMobileLayout();
 
+  document.body.classList.add('touch-active');
   document.getElementById('touchControls').style.display = 'block';
   // Hide keyboard hint
   document.querySelectorAll('.controls-hint').forEach(el => el.classList.add('touch-hide'));
