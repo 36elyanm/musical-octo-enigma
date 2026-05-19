@@ -36,9 +36,6 @@
     overflow: hidden;
     font-family: var(--sf);
     -webkit-font-smoothing: antialiased;
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
   }
 
   #gameContainer {
@@ -46,118 +43,15 @@
     width: 800px;
     height: 600px;
     border-radius: 18px;
-    overflow: hidden;
     box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06);
   }
 
   canvas {
     display: block;
     image-rendering: pixelated;
-    touch-action: none;
+    border-radius: 18px;
+    overflow: hidden;
   }
-
-  /* ── TOUCH CONTROLS ─────────────────────────────────── */
-  #touchControls {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    display: none;
-  }
-
-  /* Left joystick zone — full bottom-left half */
-  #joystickZone {
-    position: absolute;
-    left: 0; bottom: 0;
-    width: 50%; height: 55%;
-    pointer-events: all;
-  }
-
-  #joystickBase {
-    position: absolute;
-    width: 110px; height: 110px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.07);
-    border: 2px solid rgba(255,255,255,0.18);
-    display: none;
-    transform: translate(-50%,-50%);
-    pointer-events: none;
-  }
-
-  #joystickKnob {
-    position: absolute;
-    width: 46px; height: 46px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.30);
-    border: 2px solid rgba(255,255,255,0.55);
-    transform: translate(-50%,-50%);
-    pointer-events: none;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
-  }
-
-  /* Right aim/shoot zone — leave bottom-right clear for minimap/ammo */
-  #aimZone {
-    position: absolute;
-    right: 0; top: 0;
-    width: 50%; height: 75%;
-    pointer-events: all;
-  }
-
-  /* Touch action buttons — right side, above minimap (minimap is 110px + 14px = 124px) */
-  #touchButtons {
-    position: absolute;
-    right: 14px;
-    bottom: 130px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    pointer-events: all;
-    z-index: 10;
-  }
-
-  .touch-btn {
-    width: 54px; height: 54px;
-    border-radius: 14px;
-    border: 2px solid rgba(255,255,255,0.22);
-    background: rgba(20,20,22,0.88);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    cursor: pointer;
-    pointer-events: all;
-    transition: all 0.1s ease;
-    -webkit-tap-highlight-color: transparent;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
-  }
-
-  .touch-btn-label {
-    font-size: 8px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--text-tertiary);
-    margin-top: 1px;
-    line-height: 1;
-  }
-
-  .touch-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.15); }
-
-  #btnReload  { border-color: rgba(255,159,10,0.5); }
-  #btnHeal    { border-color: rgba(48,209,88,0.5); }
-  #btnBuild   { border-color: rgba(10,132,255,0.5); }
-
-  /* Weapon slots touchable on mobile */
-  #inventory .slot { pointer-events: all; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-
-  /* Hide keyboard hints on touch */
-  .touch-hide { display: none !important; }
-
-  /* On touch: hide the keyboard build hint bar since we have buttons */
-  body.touch-active #buildMenu { display: none !important; }
 
   /* ── HUD ─────────────────────────────────────────── */
   #ui {
@@ -288,10 +182,10 @@
     100%{ opacity:0; transform:translateY(-6px); }
   }
 
-  /* ammo — moved up to make room for touch buttons below it */
+  /* ammo */
   #ammoInfo {
     position: absolute;
-    bottom: 230px; right: 14px;
+    bottom: 72px; right: 14px;
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     backdrop-filter: blur(24px) saturate(180%);
@@ -615,14 +509,55 @@
   }
   #difficultySelect2 .diffBtn { pointer-events: all; }
 
-  /* ── Responsive / Mobile ────────────────────────────── */
-  @media (max-width: 820px) {
-    body { justify-content: center; }
-    #gameContainer {
-      border-radius: 0;
-      box-shadow: none;
-      /* JS applies scale transform; CSS keeps it centered */
-    }
+  /* ── JOYSTICK ─────────────────────────────────────────── */
+  #joystickZone {
+    position: absolute;
+    right: -170px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 130px;
+    height: 130px;
+    pointer-events: all;
+    touch-action: none;
+    user-select: none;
+  }
+  #joystickBase {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(100, 210, 255, 0.15);
+    border: 2.5px solid rgba(100, 210, 255, 0.55);
+    box-shadow: 0 0 18px rgba(100,210,255,0.3), inset 0 0 14px rgba(100,210,255,0.08);
+  }
+  #joystickKnob {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 36%, rgba(200,245,255,0.95), rgba(70,185,255,0.8));
+    border: 2px solid rgba(160,230,255,0.85);
+    box-shadow: 0 2px 14px rgba(70,185,255,0.55), inset 0 1px 0 rgba(255,255,255,0.45);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    transition: box-shadow 0.1s;
+  }
+  #joystickKnob.active {
+    box-shadow: 0 2px 22px rgba(70,185,255,0.85), inset 0 1px 0 rgba(255,255,255,0.45);
+  }
+  /* tap-to-attack ring */
+  .tap-flash {
+    position: absolute;
+    border-radius: 50%;
+    border: 2.5px solid rgba(255, 220, 50, 0.9);
+    background: rgba(255, 220, 50, 0.12);
+    pointer-events: none;
+    animation: tapRing 0.35s ease-out forwards;
+    transform: translate(-50%, -50%);
+  }
+  @keyframes tapRing {
+    0%   { width: 16px; height: 16px; opacity: 1; }
+    100% { width: 58px; height: 58px; opacity: 0; }
   }
 </style>
 </head>
@@ -689,19 +624,10 @@
     <div id="buildModeLabel">🔨 Build Mode</div>
   </div>
 
-  <!-- ── TOUCH CONTROLS ── -->
-  <div id="touchControls">
-    <div id="joystickZone">
-      <div id="joystickBase">
-        <div id="joystickKnob"></div>
-      </div>
-    </div>
-    <div id="aimZone"></div>
-    <div id="touchButtons">
-      <div class="touch-btn" id="btnBuild">🔨<span class="touch-btn-label">Build</span></div>
-      <div class="touch-btn" id="btnHeal">💊<span class="touch-btn-label">Heal</span></div>
-      <div class="touch-btn" id="btnReload">🔄<span class="touch-btn-label">Reload</span></div>
-    </div>
+  <!-- Joystick sits in the right black border -->
+  <div id="joystickZone">
+    <div id="joystickBase"></div>
+    <div id="joystickKnob"></div>
   </div>
 
   <!-- ── START OVERLAY ── -->
@@ -773,28 +699,28 @@ const DIFFICULTIES = {
   },
   medium: {
     label: 'Balanced — the classic experience',
-    playerShield: 0, playerMats: 50, playerPots: 2, playerShieldPots: 1, playerSpeed: 3.5,
-    enemyCount: 19, enemyHpMin: 80, enemyHpRange: 40, enemySpeedMin: 1.2, enemySpeedRange: 0.8,
-    enemyAggroMin: 250, enemyAggroRange: 100, enemyDmgMult: 0.6, enemyFireMult: 1.5,
-    lootCount: 30,
+    playerShield: 10, playerMats: 60, playerPots: 2, playerShieldPots: 1, playerSpeed: 3.8,
+    enemyCount: 16, enemyHpMin: 70, enemyHpRange: 25, enemySpeedMin: 1.1, enemySpeedRange: 0.5,
+    enemyAggroMin: 220, enemyAggroRange: 80, enemyDmgMult: 0.26, enemyFireMult: 3.0,
+    lootCount: 32,
     stormPhases: [
-      { targetRadius: WORLD*0.4,  timer: 40, damage: 2 },
-      { targetRadius: WORLD*0.22, timer: 35, damage: 4 },
-      { targetRadius: WORLD*0.10, timer: 25, damage: 6 },
-      { targetRadius: WORLD*0.03, timer: 20, damage: 10 },
+      { targetRadius: WORLD*0.4,  timer: 48, damage: 2 },
+      { targetRadius: WORLD*0.22, timer: 38, damage: 4 },
+      { targetRadius: WORLD*0.10, timer: 28, damage: 6 },
+      { targetRadius: WORLD*0.03, timer: 20, damage: 9 },
     ]
   },
   hard: {
     label: 'More enemies, faster & deadlier, rapid storm',
-    playerShield: 0, playerMats: 20, playerPots: 1, playerShieldPots: 0, playerSpeed: 3.0,
-    enemyCount: 28, enemyHpMin: 100, enemyHpRange: 60, enemySpeedMin: 1.8, enemySpeedRange: 1.0,
-    enemyAggroMin: 350, enemyAggroRange: 150, enemyDmgMult: 0.9, enemyFireMult: 0.9,
-    lootCount: 18,
+    playerShield: 10, playerMats: 40, playerPots: 2, playerShieldPots: 1, playerSpeed: 3.8,
+    enemyCount: 20, enemyHpMin: 80, enemyHpRange: 30, enemySpeedMin: 1.0, enemySpeedRange: 0.5,
+    enemyAggroMin: 220, enemyAggroRange: 80, enemyDmgMult: 0.28, enemyFireMult: 3.0,
+    lootCount: 28,
     stormPhases: [
-      { targetRadius: WORLD*0.4,  timer: 25, damage: 4 },
-      { targetRadius: WORLD*0.22, timer: 20, damage: 8 },
-      { targetRadius: WORLD*0.10, timer: 15, damage: 12 },
-      { targetRadius: WORLD*0.03, timer: 12, damage: 18 },
+      { targetRadius: WORLD*0.38, timer: 40, damage: 2 },
+      { targetRadius: WORLD*0.20, timer: 32, damage: 4 },
+      { targetRadius: WORLD*0.09, timer: 24, damage: 7 },
+      { targetRadius: WORLD*0.02, timer: 18, damage: 11 },
     ]
   }
 };
@@ -1459,189 +1385,6 @@ document.querySelectorAll('[data-diff2]').forEach(btn=>{
   });
 });
 
-// ── Touch Controls ──────────────────────────────────────────
-const isTouchDevice = () => ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-
-// Make gameContainer and canvas fill screen on mobile
-function applyMobileLayout() {
-  const gc = document.getElementById('gameContainer');
-  const cvs = document.getElementById('gameCanvas');
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const scale = Math.min(vw / 800, vh / 600);
-  gc.style.transformOrigin = 'center center';
-  gc.style.transform = `scale(${scale})`;
-  // Also reposition mouse coords for scaled canvas
-  window._canvasScale = scale;
-}
-
-window.addEventListener('resize', () => { if (isTouchDevice()) applyMobileLayout(); });
-
-// Joystick state
-const joystick = { active: false, id: null, baseX: 0, baseY: 0, dx: 0, dy: 0 };
-const JOYSTICK_RADIUS = 55;
-
-// Aim/shoot state
-const aimTouch = { active: false, id: null, shooting: false };
-
-function initTouchControls() {
-  const touch = isTouchDevice();
-
-  if (touch) applyMobileLayout();
-
-  document.body.classList.add('touch-active');
-  document.getElementById('touchControls').style.display = 'block';
-  if (touch) document.querySelectorAll('.controls-hint').forEach(el => el.classList.add('touch-hide'));
-
-  const joystickZone = document.getElementById('joystickZone');
-  const joystickBase = document.getElementById('joystickBase');
-  const joystickKnob = document.getElementById('joystickKnob');
-  const aimZone = document.getElementById('aimZone');
-
-  // Only activate joystick + aim zones on actual touch devices
-  if (!touch) {
-    joystickZone.style.pointerEvents = 'none';
-    aimZone.style.pointerEvents = 'none';
-  }
-
-  function showJoystick(x, y) {
-    joystickBase.style.left = x + 'px';
-    joystickBase.style.top  = y + 'px';
-    joystickKnob.style.left = x + 'px';
-    joystickKnob.style.top  = y + 'px';
-    joystickBase.style.display = 'block';
-  }
-
-  function moveKnob(x, y) {
-    let dx = x - joystick.baseX, dy = y - joystick.baseY;
-    let dist = Math.sqrt(dx*dx + dy*dy);
-    if (dist > JOYSTICK_RADIUS) { dx = dx/dist*JOYSTICK_RADIUS; dy = dy/dist*JOYSTICK_RADIUS; }
-    joystickKnob.style.left = (joystick.baseX + dx) + 'px';
-    joystickKnob.style.top  = (joystick.baseY + dy) + 'px';
-    joystick.dx = dx / JOYSTICK_RADIUS;
-    joystick.dy = dy / JOYSTICK_RADIUS;
-    // Map to key-like state
-    keys['w'] = joystick.dy < -0.2;
-    keys['s'] = joystick.dy >  0.2;
-    keys['a'] = joystick.dx < -0.2;
-    keys['d'] = joystick.dx >  0.2;
-  }
-
-  function getLocalPos(touch) {
-    const rect = document.getElementById('gameContainer').getBoundingClientRect();
-    const scale = window._canvasScale || 1;
-    // The container is scaled via CSS transform from center; compute local coords
-    const containerCenterX = rect.left + rect.width/2;
-    const containerCenterY = rect.top  + rect.height/2;
-    const localX = (touch.clientX - containerCenterX) / scale + 400; // 400 = W/2
-    const localY = (touch.clientY - containerCenterY) / scale + 300; // 300 = H/2
-    return { x: localX, y: localY };
-  }
-
-  // Joystick zone touch
-  joystickZone.addEventListener('touchstart', e => {
-    e.preventDefault();
-    for (let t of e.changedTouches) {
-      if (!joystick.active) {
-        joystick.active = true;
-        joystick.id = t.identifier;
-        joystick.baseX = t.clientX - joystickZone.getBoundingClientRect().left;
-        joystick.baseY = t.clientY - joystickZone.getBoundingClientRect().top;
-        showJoystick(joystick.baseX, joystick.baseY);
-        moveKnob(joystick.baseX, joystick.baseY);
-      }
-    }
-  }, { passive: false });
-
-  joystickZone.addEventListener('touchmove', e => {
-    e.preventDefault();
-    for (let t of e.changedTouches) {
-      if (t.identifier === joystick.id) {
-        const rect = joystickZone.getBoundingClientRect();
-        moveKnob(t.clientX - rect.left, t.clientY - rect.top);
-      }
-    }
-  }, { passive: false });
-
-  joystickZone.addEventListener('touchend', e => {
-    e.preventDefault();
-    for (let t of e.changedTouches) {
-      if (t.identifier === joystick.id) {
-        joystick.active = false;
-        joystick.id = null;
-        joystick.dx = 0; joystick.dy = 0;
-        keys['w'] = keys['s'] = keys['a'] = keys['d'] = false;
-        joystickBase.style.display = 'none';
-      }
-    }
-  }, { passive: false });
-
-  // Aim zone touch — move mouse & shoot
-  aimZone.addEventListener('touchstart', e => {
-    e.preventDefault();
-    for (let t of e.changedTouches) {
-      if (!aimTouch.active) {
-        aimTouch.active = true;
-        aimTouch.id = t.identifier;
-        const pos = getLocalPos(t);
-        mouse.x = pos.x; mouse.y = pos.y;
-        mouse.down = true;
-        aimTouch.shooting = true;
-      }
-    }
-  }, { passive: false });
-
-  aimZone.addEventListener('touchmove', e => {
-    e.preventDefault();
-    for (let t of e.changedTouches) {
-      if (t.identifier === aimTouch.id) {
-        const pos = getLocalPos(t);
-        mouse.x = pos.x; mouse.y = pos.y;
-      }
-    }
-  }, { passive: false });
-
-  aimZone.addEventListener('touchend', e => {
-    e.preventDefault();
-    for (let t of e.changedTouches) {
-      if (t.identifier === aimTouch.id) {
-        aimTouch.active = false;
-        aimTouch.id = null;
-        mouse.down = false;
-      }
-    }
-  }, { passive: false });
-
-  // Action buttons — work on both touch and mouse click
-  function addBtn(id, fn) {
-    const el = document.getElementById(id);
-    el.addEventListener('touchstart', e => { e.preventDefault(); fn(); }, { passive: false });
-    el.addEventListener('click', e => { e.stopPropagation(); fn(); });
-  }
-
-  addBtn('btnReload', () => { if (gameRunning) startReload(player.weapon); });
-
-  addBtn('btnHeal', () => {
-    if (!gameRunning) return;
-    if (player.pots > 0 && player.hp < 100) { player.hp = Math.min(100, player.hp+50); player.pots--; spawnParticle(player.x,player.y,'#30D158',8); updateHUD(); }
-    else if (player.shieldPots > 0 && player.shield < player.maxShield) { player.shield = Math.min(player.maxShield, player.shield+50); player.shieldPots--; spawnParticle(player.x,player.y,'#0A84FF',8); updateHUD(); }
-  });
-
-  addBtn('btnBuild', () => {
-    if (!gameRunning) return;
-    buildMode = !buildMode;
-    document.getElementById('buildModeLabel').style.display = buildMode ? 'block' : 'none';
-  });
-
-  // Weapon slots — tap/click to switch
-  for (let i = 0; i < 5; i++) {
-    const slot = document.getElementById('slot' + i);
-    slot.addEventListener('touchstart', ev => { ev.preventDefault(); if (gameRunning) { player.weapon = i; player.reloading = false; updateHUD(); } }, { passive: false });
-    slot.addEventListener('click', () => { if (gameRunning) { player.weapon = i; player.reloading = false; updateHUD(); } });
-  }
-}
-
-// ── End Touch Controls ───────────────────────────────────────
-
 // Boot: build a preview world and start rendering it
 initMap();
 spawnObstacles();
@@ -1651,9 +1394,103 @@ spawnLoot(DIFFICULTIES[currentDifficulty].lootCount);
 cam.x = WORLD/2 - W/2;
 cam.y = WORLD/2 - H/2;
 
-initTouchControls();
 previewLoop();
 gameLoop();
+
+// ── JOYSTICK ────────────────────────────────────────────
+(function() {
+  const zone = document.getElementById('joystickZone');
+  const knob = document.getElementById('joystickKnob');
+  const MAX  = 38; // max knob travel px from center
+  let active = false;
+
+  function getCenter() {
+    const r = zone.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+
+  function move(px, py) {
+    const c = getCenter();
+    let dx = px - c.x, dy = py - c.y;
+    const d = Math.sqrt(dx*dx + dy*dy);
+    if (d > MAX) { dx = dx/d*MAX; dy = dy/d*MAX; }
+    knob.style.left = (65 + dx) + 'px';
+    knob.style.top  = (65 + dy) + 'px';
+    knob.style.transform = 'translate(-50%,-50%)';
+    const nx = d > 0 ? (px - c.x) / d : 0;
+    const ny = d > 0 ? (py - c.y) / d : 0;
+    keys['w'] = ny < -0.3;
+    keys['s'] = ny >  0.3;
+    keys['a'] = nx < -0.3;
+    keys['d'] = nx >  0.3;
+  }
+
+  function release() {
+    active = false;
+    knob.classList.remove('active');
+    knob.style.left = '50%';
+    knob.style.top  = '50%';
+    knob.style.transform = 'translate(-50%,-50%)';
+    keys['w'] = keys['s'] = keys['a'] = keys['d'] = false;
+  }
+
+  zone.addEventListener('touchstart', e => {
+    e.preventDefault(); active = true; knob.classList.add('active');
+    move(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: false });
+  zone.addEventListener('touchmove', e => {
+    e.preventDefault(); if (active) move(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: false });
+  zone.addEventListener('touchend',   e => { e.preventDefault(); release(); }, { passive: false });
+  zone.addEventListener('touchcancel',e => { e.preventDefault(); release(); }, { passive: false });
+
+  // Mouse fallback for desktop
+  zone.addEventListener('mousedown', e => {
+    active = true; knob.classList.add('active');
+    move(e.clientX, e.clientY); e.stopPropagation();
+  });
+  window.addEventListener('mousemove', e => { if (active) move(e.clientX, e.clientY); });
+  window.addEventListener('mouseup',   () => { if (active) release(); });
+})();
+
+// ── TAP TO ATTACK ENEMIES ───────────────────────────────
+canvas.addEventListener('click', function(e) {
+  if (!gameRunning || !player.alive) return;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width  / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const cx = (e.clientX - rect.left) * scaleX;
+  const cy = (e.clientY - rect.top)  * scaleY;
+  const wx = cx + cam.x;
+  const wy = cy + cam.y;
+
+  let tapped = false;
+  enemies.forEach(en => {
+    if (!en.alive || tapped) return;
+    const d = Math.sqrt((wx - en.x)**2 + (wy - en.y)**2);
+    if (d < en.size + 20) {
+      tapped = true;
+      const w = weapons[player.weapon];
+      if (w.currentAmmo > 0) {
+        const tapDmg = Math.max(3, Math.round(w.damage * 0.1));
+        en.hp -= tapDmg;
+        w.currentAmmo--;
+        addDamageNum(en.x, en.y - 20, tapDmg, '#FFD60A');
+        spawnParticle(en.x, en.y, '#FF453A', 6);
+        player.angle = Math.atan2(en.y - player.y, en.x - player.x);
+        // Visual flash ring at tap position
+        const flash = document.createElement('div');
+        flash.className = 'tap-flash';
+        flash.style.left = (e.clientX - rect.left) + 'px';
+        flash.style.top  = (e.clientY - rect.top)  + 'px';
+        document.getElementById('gameContainer').appendChild(flash);
+        setTimeout(() => flash.remove(), 400);
+      } else {
+        startReload(player.weapon);
+      }
+    }
+  });
+});
 </script>
 </body>
 </html>
